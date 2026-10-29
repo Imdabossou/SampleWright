@@ -1,0 +1,12 @@
+# build output
+target/
+/dist/
+# AI model weights (downloaded by the app, see docs/MODELS.md)
+/models/
+# keep songs, stems and samples out of the repository
+*.mp3
+*.flac
+*.ogg
+*.wav
+*.m4a
+*.aiff

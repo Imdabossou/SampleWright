@@ -1,0 +1,86 @@
+# Tests every push to main and development; builds release bundles for Linux, Windows and macOS.
+# Push a tag like v0.1.0 to publish them as a GitHub release (the model files
+# live in a separate "models-1" release, see docs/RELEASING.md).
+name: build
+
+on:
+  push:
+    branches: [main, development]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Tag matches the Cargo.toml version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          want="v$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          [ "$GITHUB_REF_NAME" = "$want" ] || { echo "Tag $GITHUB_REF_NAME does not match Cargo.toml ($want)"; exit 1; }
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with: { toolchain: stable, components: clippy }
+      - name: System libraries (ALSA headers for audio output)
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --release --locked
+
+  bundle:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 22.04 keeps the glibc requirement low for older distributions
+          - { os: ubuntu-22.04, platform: linux-x64 }
+          - { os: windows-latest, platform: windows-x64 }
+          - { os: macos-14, platform: macos-arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with: { toolchain: stable }
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Linux packaging tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y libasound2-dev libfuse2 desktop-file-utils
+          curl -fsSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/1.9.0/appimagetool-x86_64.AppImage
+          chmod +x appimagetool && echo "APPIMAGETOOL=$PWD/appimagetool" >> "$GITHUB_ENV"
+      - name: Package
+        shell: bash
+        run: |
+          extra=""
+          if [ "$RUNNER_OS" = "Linux" ]; then extra="--appimage"; fi
+          cargo xtask package --platform ${{ matrix.platform }} $extra
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: samplewright-${{ matrix.platform }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.AppImage
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { path: dist, merge-multiple: true }
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          name: SampleWright ${{ github.ref_name }}
+          files: dist/*
+          generate_release_notes: true

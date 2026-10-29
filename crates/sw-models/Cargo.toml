@@ -1,0 +1,32 @@
+[package]
+name = "sw-models"
+description = "Demucs source separation and Beat This! beat tracking for SampleWright"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+thiserror.workspace = true
+rayon.workspace = true
+realfft.workspace = true
+rten = "0.24"
+rten-tensor = "0.24"
+ureq = "3"
+sha2 = "0.10"
+pollster = "0.4"
+cubecl = { version = "0.9", default-features = false }
+demucs-core = { path = "../../third_party/demucs-rs/demucs-core", features = ["wgpu", "ndarray", "autotune"] }
+burn = { version = "0.20.1", default-features = false, features = ["std", "wgpu", "ndarray", "autotune"] }
+# multi-threaded CPU fallback (not reachable through the burn facade)
+burn-ndarray = { version = "0.20.1", features = ["multi-threads"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+burn = { version = "0.20.1", default-features = false, features = ["metal"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+burn = { version = "0.20.1", default-features = false, features = ["vulkan"] }
+
+[lints]
+workspace = true

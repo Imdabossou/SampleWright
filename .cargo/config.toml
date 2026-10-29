@@ -1,0 +1,3 @@
+[alias]
+# release packaging: cargo xtask package [--with-models] [--appimage] ...
+xtask = "run --quiet --package xtask --"

@@ -1,0 +1,20 @@
+[package]
+name = "sw-core"
+description = "Songs, stems, regions and sample export of SampleWright"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+thiserror.workspace = true
+rayon.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10"
+sw-audio = { path = "../sw-audio" }
+sw-models = { path = "../sw-models" }
+
+[lints]
+workspace = true

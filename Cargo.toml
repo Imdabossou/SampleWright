@@ -1,0 +1,41 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+# vendored crates keep their own workspace settings
+exclude = ["third_party"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/Imdabossou/SampleWright"
+rust-version = "1.89"
+
+[workspace.dependencies]
+thiserror = "2"
+rayon = "1.10"
+realfft = "3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+flate2 = { version = "1", default-features = false, features = ["zlib-rs"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+
+# the separation and beat networks are unusably slow unoptimised, even in debug builds
+[profile.dev.package."*"]
+opt-level = 3
+
+# and our own DSP, which the app runs on whole songs
+[profile.dev.package.sw-audio]
+opt-level = 3
+
+[profile.dev.package.sw-core]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

@@ -1,0 +1,20 @@
+[package]
+name = "sw-cli"
+description = "SampleWright from the command line: separate, export loops, slice one-shots"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "samplewright-cli"
+path = "src/main.rs"
+
+[dependencies]
+sw-core = { path = "../sw-core" }
+sw-audio = { path = "../sw-audio" }
+sw-models = { path = "../sw-models" }
+
+[lints]
+workspace = true
