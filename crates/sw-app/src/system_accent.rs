@@ -1,8 +1,8 @@
 //! Reads the desktop's accent colour so the app matches the rest of the system.
 //!
 //! Linux uses the XDG settings portal, which covers every desktop that implements it, and follows
-//! changes live. Windows reads the same registry value the shell uses. Everywhere else, and when
-//! a desktop doesn't report one, there is no accent and the app stays monochrome.
+//! changes live. Windows reads the same registry value the shell uses, and macOS the same user
+//! default as System Settings. When a desktop doesn't report one, the app stays monochrome.
 
 use eframe::egui::{self, Color32};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -127,7 +127,40 @@ fn follow(ctx: &egui::Context) {
     }
 }
 
-#[cfg(not(any(target_os = "linux", windows)))]
+/// The colours behind each choice in System Settings. An unset value is the default, blue.
+#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
+fn from_macos(value: Option<i32>) -> Option<[u8; 3]> {
+    match value {
+        Some(-1) => Some([0x98, 0x98, 0x98]),
+        Some(0) => Some([0xe0, 0x38, 0x3e]),
+        Some(1) => Some([0xf7, 0x82, 0x1b]),
+        Some(2) => Some([0xff, 0xc6, 0x00]),
+        Some(3) => Some([0x62, 0xba, 0x46]),
+        None | Some(4) => Some([0x00, 0x7a, 0xff]),
+        Some(5) => Some([0x95, 0x3d, 0x96]),
+        Some(6) => Some([0xf7, 0x4f, 0x9e]),
+        Some(_) => None,
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn follow(ctx: &egui::Context) {
+    loop {
+        // A missing key is a normal failure of this command and means the default accent.
+        let accent = std::process::Command::new("/usr/bin/defaults")
+            .args(["read", "-g", "AppleAccentColor"])
+            .output()
+            .ok()
+            .and_then(|out| {
+                let value = out.status.success().then(|| String::from_utf8_lossy(&out.stdout).trim().parse().ok());
+                from_macos(value.flatten())
+            });
+        set(accent, ctx);
+        std::thread::sleep(std::time::Duration::from_secs(5));
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 fn follow(_ctx: &egui::Context) {}
 
 #[cfg(test)]
@@ -143,6 +176,14 @@ mod tests {
     fn out_of_range_means_no_accent() {
         assert_eq!(from_portal([-1.0, -1.0, -1.0]), None);
         assert_eq!(from_portal([0.5, 1.5, 0.5]), None);
+    }
+
+    #[test]
+    fn macos_defaults_to_blue_and_maps_its_choices() {
+        assert_eq!(from_macos(None), Some([0x00, 0x7a, 0xff]));
+        assert_eq!(from_macos(Some(4)), from_macos(None));
+        assert_eq!(from_macos(Some(0)), Some([0xe0, 0x38, 0x3e]));
+        assert_eq!(from_macos(Some(99)), None);
     }
 
     #[test]
