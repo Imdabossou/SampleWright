@@ -11,7 +11,7 @@ use sw_core::grid::Snap;
 use sw_core::slice::Slice;
 use sw_core::{SAMPLE_RATE, Session};
 
-use crate::theme::{self, ACCENT, palette, stem_color};
+use crate::theme::{self, palette, stem_color};
 
 const LEFT: f32 = 150.0;
 const RULER_H: f32 = 28.0;
@@ -148,6 +148,7 @@ impl Timeline {
         slices: Option<(u64, &[Slice])>,
         busy: Option<&str>,
     ) -> Events {
+        let accent = theme::accent(ui.ctx());
         let mut ev = Events::default();
         let pal = palette(ui.ctx());
         let full = ui.available_rect_before_wrap();
@@ -408,7 +409,7 @@ impl Timeline {
                 let Some(i) = lane_of(st) else { continue };
                 let lr = lane_rect(i);
                 let box_ = Rect::from_min_max(pos2(a, lr.top() + 2.0), pos2(b, lr.bottom() - 2.0));
-                let col = if is_sel { ACCENT } else { stem_color(st) };
+                let col = if is_sel { accent } else { stem_color(st) };
                 clip.rect_filled(box_, CornerRadius::same(4), col.gamma_multiply(if is_sel { 0.22 } else { 0.12 }));
             }
         }
@@ -453,7 +454,7 @@ impl Timeline {
                 top_lane = top_lane.min(i);
                 let lr = lane_rect(i);
                 let box_ = Rect::from_min_max(pos2(a, lr.top() + 2.0), pos2(b, lr.bottom() - 2.0));
-                let col = if is_sel { ACCENT } else { stem_color(st) };
+                let col = if is_sel { accent } else { stem_color(st) };
                 clip.rect_stroke(box_, CornerRadius::same(4), Stroke::new(if is_sel { 2.0 } else { 1.0 }, col), StrokeKind::Inside);
             }
             if top_lane != usize::MAX {
@@ -474,7 +475,7 @@ impl Timeline {
                 let (ya, yb) = (lane_rect(lo).top() + 2.0, lane_rect(hi).bottom() - 2.0);
                 for c in cuts {
                     let x = t2x(c.start, self);
-                    clip.line_segment([pos2(x, ya), pos2(x, yb)], Stroke::new(1.5, ACCENT));
+                    clip.line_segment([pos2(x, ya), pos2(x, yb)], Stroke::new(1.5, accent));
                     if let Some(l) = &c.label
                         && (t2x(c.end, self) - x) > 22.0
                     {
@@ -490,7 +491,7 @@ impl Timeline {
             let (ta, tb) = (lane_rect(sel.lanes.0).top(), lane_rect(sel.lanes.1).bottom());
             let r = Rect::from_min_max(pos2(a, ta), pos2(b.max(a + 1.0), tb));
             clip.rect_filled(r, 0.0, pal.selection);
-            clip.rect_stroke(r, 0.0, Stroke::new(1.0, ACCENT), StrokeKind::Inside);
+            clip.rect_stroke(r, 0.0, Stroke::new(1.0, accent), StrokeKind::Inside);
             let len = sel.end - sel.start;
             let bars = s.grid.bars_of(sel.start, sel.end).map(|(x, y)| format!("  ·  {} bar{}", y + 1 - x, if y > x { "s" } else { "" })).unwrap_or_default();
             clip.text(pos2(a + 4.0, tb - 4.0), Align2::LEFT_BOTTOM, format!("{len:.2} s{bars}"), FontId::proportional(11.0), pal.text);

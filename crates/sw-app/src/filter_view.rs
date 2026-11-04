@@ -5,7 +5,7 @@
 use eframe::egui::{self, Align2, CornerRadius, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use sw_audio::filter::{BandKind, Filters};
 
-use crate::theme::{ACCENT, palette};
+use crate::theme::{self, palette};
 
 const F_MIN: f64 = 20.0;
 const F_MAX: f64 = 20_000.0;
@@ -23,6 +23,7 @@ enum Handle {
 pub type Spectrum = (Vec<f32>, u32);
 
 pub fn ui(ui: &mut Ui, f: &mut Filters, spectrum: Option<&Spectrum>, sr: u32) -> bool {
+    let accent = theme::accent(ui.ctx());
     let pal = palette(ui.ctx());
     let w = ui.available_width();
     let (rect, resp) = ui.allocate_exact_size(vec2(w, 170.0), Sense::click_and_drag());
@@ -81,7 +82,7 @@ pub fn ui(ui: &mut Ui, f: &mut Filters, spectrum: Option<&Spectrum>, sr: u32) ->
             pos2(x, db2y(f.response_db(x2f(x), sr as f64) as f32))
         })
         .collect();
-    painter.line(curve, Stroke::new(2.0, if active { ACCENT } else { pal.dim }));
+    painter.line(curve, Stroke::new(2.0, if active { accent } else { pal.dim }));
 
     // handles
     let handles: Vec<(Handle, Pos2)> = {
@@ -155,8 +156,8 @@ pub fn ui(ui: &mut Ui, f: &mut Filters, spectrum: Option<&Spectrum>, sr: u32) ->
     for (h, at) in &handles {
         let hot = hover.is_some_and(|p| nearest(p) == Some(*h)) || grabbed == Some(*h);
         let r = Rect::from_center_size(*at, vec2(10.0, 10.0));
-        painter.rect_filled(r, CornerRadius::same(5), if hot { ACCENT } else { pal.lane });
-        painter.rect_stroke(r, CornerRadius::same(5), Stroke::new(2.0, ACCENT), StrokeKind::Middle);
+        painter.rect_filled(r, CornerRadius::same(5), if hot { accent } else { pal.lane });
+        painter.rect_stroke(r, CornerRadius::same(5), Stroke::new(2.0, accent), StrokeKind::Middle);
         let label = match h {
             Handle::High => "HP".to_string(),
             Handle::Low => "LP".to_string(),

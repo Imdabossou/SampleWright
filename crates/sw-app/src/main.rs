@@ -9,6 +9,7 @@ mod app;
 mod filter_view;
 mod icon;
 mod player;
+mod system_accent;
 mod theme;
 mod timeline;
 

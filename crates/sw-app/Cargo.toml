@@ -22,6 +22,12 @@ sw-core = { path = "../sw-core" }
 sw-audio = { path = "../sw-audio" }
 sw-models = { path = "../sw-models" }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "5", default-features = false, features = ["async-io", "blocking-api"] }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"
 

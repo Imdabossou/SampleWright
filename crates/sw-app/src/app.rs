@@ -76,6 +76,7 @@ enum Tab {
 }
 
 pub struct App {
+    last_accent: Option<egui::Color32>,
     session: Option<Session>,
     stems: Option<Stems>,
     lanes: Vec<LaneState>,
@@ -130,6 +131,7 @@ const AUDIO_EXTS: [&str; 9] = ["mp3", "flac", "wav", "ogg", "m4a", "aac", "aif",
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>, open: Option<PathBuf>) -> App {
         theme::install(&cc.egui_ctx);
+        crate::system_accent::start(&cc.egui_ctx);
         let prefs: Prefs = cc.storage.and_then(|s| eframe::get_value(s, "prefs")).unwrap_or_default();
         cc.egui_ctx.set_theme(match prefs.theme.as_str() {
             "light" => egui::ThemePreference::Light,
@@ -151,6 +153,7 @@ impl App {
         }
         let player = Player::new();
         let mut app = App {
+            last_accent: None,
             session: None,
             stems: None,
             lanes: Vec::new(),
@@ -1184,6 +1187,7 @@ impl App {
 
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        theme::refresh(ui.ctx(), &mut self.last_accent);
         let ctx = ui.ctx().clone();
         self.poll_job(&ctx);
         self.player.poll();

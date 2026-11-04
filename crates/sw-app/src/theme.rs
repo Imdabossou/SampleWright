@@ -1,16 +1,22 @@
-//! Colours for the light and dark themes, and one colour per stem that reads
-//! on both.
+//! Colours for the light and dark themes: neutral greys plus the system accent.
+//! Stem colours stay fixed because they tell the stems apart, and read on both.
 
+use crate::system_accent;
 use eframe::egui::{self, Color32, Theme};
 
-pub const ACCENT: Color32 = Color32::from_rgb(0xf0, 0xa0, 0x30);
-
-/// The accent for text and thin lines: darker on light backgrounds so it stays readable.
-pub fn accent_text(ctx: &egui::Context) -> Color32 {
-    match ctx.theme() {
-        Theme::Dark => ACCENT,
-        Theme::Light => Color32::from_rgb(0xa8, 0x5c, 0x00),
+/// The accent for selections and highlights: the desktop's own, or monochrome if it has none.
+pub fn accent(ctx: &egui::Context) -> Color32 {
+    let dark = ctx.theme() == Theme::Dark;
+    match system_accent::get() {
+        Some(c) => system_accent::readable(c, dark),
+        None if dark => Color32::from_gray(0xe6),
+        None => Color32::from_gray(0x1f),
     }
+}
+
+/// The accent for text and thin lines, always readable on the theme's background.
+pub fn accent_text(ctx: &egui::Context) -> Color32 {
+    accent(ctx)
 }
 
 /// Colours of the timeline and graphs for the current theme.
@@ -29,32 +35,37 @@ pub struct Palette {
     pub playhead: Color32,
 }
 
+fn selection_fill(ctx: &egui::Context, alpha: u8) -> Color32 {
+    let c = accent(ctx);
+    Color32::from_rgba_unmultiplied(c.r(), c.g(), c.b(), alpha)
+}
+
 pub fn palette(ctx: &egui::Context) -> Palette {
     match ctx.theme() {
         Theme::Dark => Palette {
-            bg: Color32::from_rgb(0x17, 0x19, 0x1e),
-            lane: Color32::from_rgb(0x1e, 0x21, 0x27),
-            lane_alt: Color32::from_rgb(0x22, 0x25, 0x2c),
-            header: Color32::from_rgb(0x26, 0x29, 0x31),
-            ruler: Color32::from_rgb(0x1b, 0x1d, 0x23),
+            bg: Color32::from_gray(0x19),
+            lane: Color32::from_gray(0x20),
+            lane_alt: Color32::from_gray(0x24),
+            header: Color32::from_gray(0x29),
+            ruler: Color32::from_gray(0x1c),
             bar_line: Color32::from_rgba_unmultiplied(255, 255, 255, 46),
             beat_line: Color32::from_rgba_unmultiplied(255, 255, 255, 14),
-            text: Color32::from_rgb(0xdd, 0xdf, 0xe4),
-            dim: Color32::from_rgb(0x8a, 0x8f, 0x9a),
-            selection: Color32::from_rgba_unmultiplied(0xf0, 0xa0, 0x30, 40),
+            text: Color32::from_gray(0xe0),
+            dim: Color32::from_gray(0x90),
+            selection: selection_fill(ctx, 40),
             playhead: Color32::from_rgb(0xff, 0xff, 0xff),
         },
         Theme::Light => Palette {
-            bg: Color32::from_rgb(0xf3, 0xf4, 0xf6),
-            lane: Color32::from_rgb(0xfb, 0xfb, 0xfc),
-            lane_alt: Color32::from_rgb(0xf1, 0xf2, 0xf5),
-            header: Color32::from_rgb(0xe6, 0xe8, 0xec),
-            ruler: Color32::from_rgb(0xea, 0xec, 0xef),
+            bg: Color32::from_gray(0xf4),
+            lane: Color32::from_gray(0xfb),
+            lane_alt: Color32::from_gray(0xf2),
+            header: Color32::from_gray(0xe8),
+            ruler: Color32::from_gray(0xec),
             bar_line: Color32::from_rgba_unmultiplied(0, 0, 0, 56),
             beat_line: Color32::from_rgba_unmultiplied(0, 0, 0, 16),
-            text: Color32::from_rgb(0x22, 0x25, 0x2b),
-            dim: Color32::from_rgb(0x6b, 0x70, 0x7a),
-            selection: Color32::from_rgba_unmultiplied(0xe0, 0x8a, 0x10, 46),
+            text: Color32::from_gray(0x24),
+            dim: Color32::from_gray(0x6e),
+            selection: selection_fill(ctx, 46),
             playhead: Color32::from_rgb(0x10, 0x10, 0x10),
         },
     }
@@ -73,18 +84,29 @@ pub fn stem_color(name: &str) -> Color32 {
     }
 }
 
-/// Both themes' widget styles, with the accent colour for selections.
+/// Both themes' widget styles. Called again whenever the system accent changes.
 pub fn install(ctx: &egui::Context) {
+    let accent = system_accent::get();
     let mut dark = egui::Visuals::dark();
-    dark.panel_fill = Color32::from_rgb(0x1b, 0x1d, 0x23);
-    dark.window_fill = Color32::from_rgb(0x1f, 0x22, 0x29);
-    dark.extreme_bg_color = Color32::from_rgb(0x23, 0x26, 0x2e);
-    dark.selection.bg_fill = Color32::from_rgb(0xa8, 0x6a, 0x14);
-    dark.hyperlink_color = ACCENT;
+    dark.panel_fill = Color32::from_gray(0x1c);
+    dark.window_fill = Color32::from_gray(0x21);
+    dark.extreme_bg_color = Color32::from_gray(0x26);
+    dark.selection.bg_fill = accent.map_or(Color32::from_gray(0x58), |c| c.gamma_multiply(0.55));
+    dark.selection.stroke.color = Color32::WHITE;
+    dark.hyperlink_color = accent.map_or(Color32::from_gray(0xe6), |c| system_accent::readable(c, true));
     ctx.set_visuals_of(Theme::Dark, dark);
     let mut light = egui::Visuals::light();
-    light.selection.bg_fill = Color32::from_rgb(0xf6, 0xc8, 0x82);
-    light.selection.stroke.color = Color32::from_rgb(0x40, 0x28, 0x00);
-    light.hyperlink_color = Color32::from_rgb(0xa8, 0x5c, 0x00);
+    light.selection.bg_fill = accent.map_or(Color32::from_gray(0xc8), |c| c.gamma_multiply(0.45));
+    light.selection.stroke.color = Color32::BLACK;
+    light.hyperlink_color = accent.map_or(Color32::from_gray(0x1f), |c| system_accent::readable(c, false));
     ctx.set_visuals_of(Theme::Light, light);
+}
+
+/// Restyles the widgets if the system accent has changed since the last frame.
+pub fn refresh(ctx: &egui::Context, last: &mut Option<Color32>) {
+    let now = system_accent::get();
+    if now != *last {
+        *last = now;
+        install(ctx);
+    }
 }
