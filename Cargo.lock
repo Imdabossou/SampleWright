@@ -5939,7 +5939,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "sw-app"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cpal",
  "eframe",
@@ -5957,7 +5957,7 @@ dependencies = [
 
 [[package]]
 name = "sw-audio"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rayon",
  "realfft",
@@ -5968,7 +5968,7 @@ dependencies = [
 
 [[package]]
 name = "sw-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "sw-audio",
  "sw-core",
@@ -5977,7 +5977,7 @@ dependencies = [
 
 [[package]]
 name = "sw-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rayon",
  "serde",
@@ -5990,7 +5990,7 @@ dependencies = [
 
 [[package]]
 name = "sw-models"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "burn",
  "burn-ndarray",
@@ -8078,7 +8078,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "flate2",
